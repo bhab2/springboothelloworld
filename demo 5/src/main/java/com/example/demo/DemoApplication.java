@@ -125,8 +125,8 @@ public class DemoApplication {
 		
 		// Decode values from message
 		String deviceIdString = binaryMsg.substring(0,4);
-		String msgTypeString = binaryMsg.substring(4,8);
-		String msgValueString = binaryMsg.substring(8,16);
+		String msgTypeString = binaryMsg.substring(5,9);
+		String msgValueString = binaryMsg.substring(9,16);
 
 		// Map to Enums
 		int msgTypeInt = Integer.parseInt(msgTypeString,2);
