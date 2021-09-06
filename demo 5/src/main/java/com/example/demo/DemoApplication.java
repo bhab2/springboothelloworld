@@ -29,6 +29,23 @@ enum MessageType {
 public class DemoApplication {
 
 	// Class Methods
+
+	// Private methods
+	private String parseHexBinary(String hex) {
+		String digits = "0123456789ABCDEF";
+  		hex = hex.toUpperCase();
+		String binaryString = "";
+		
+		for(int i = 0; i < hex.length(); i++) {
+			char c = hex.charAt(i);
+			int d = digits.indexOf(c);
+			if(d == 0)	binaryString += "0000"; 
+			else  binaryString += Integer.toBinaryString(d);
+		}
+		return binaryString;
+	}
+
+	// Public methods
 	public static void main(String[] args) {
 		SpringApplication.run(DemoApplication.class, args);
 	}
@@ -97,7 +114,7 @@ public class DemoApplication {
 	}
 
 	@GetMapping("/tmpsckt1")
-	public String ingresString(@RequestParam(value = "binMsg", defaultValue = "0000111100000000") String binaryMsg) {
+	public String ingresString(@RequestParam(value = "binMsg", defaultValue = "0000000000000000") String binaryMsg) {
 
 		// This method is supposed to take a msg and push it to an SQL server
 
@@ -125,21 +142,24 @@ public class DemoApplication {
 		
 		// Decode values from message
 		String deviceIdString = binaryMsg.substring(0,4);
-		String msgTypeString = binaryMsg.substring(5,9);
-		String msgValueString = binaryMsg.substring(9,16);
+		String msgTypeString = binaryMsg.substring(4,8);
+		String msgValueString = binaryMsg.substring(8,binaryMsg.length());
 
 		// Map to Enums
 		int msgTypeInt = Integer.parseInt(msgTypeString,2);
 		MessageType messageType = MessageType.init;
 		switch (msgTypeInt) {
-			case 1110:
+			case 14: // 1110
 				messageType = MessageType.temperature;
 				break;
-			case 1100:
+			case 12: //1100
 				messageType = MessageType.humidity;
 				break;
-			default:
+			case 8: //1000
 				messageType = MessageType.pressure;
+				break;
+			default:
+				break;
 		}
 
 		int decimalMsgValue = Integer.parseInt(msgValueString,2);
@@ -157,6 +177,36 @@ public class DemoApplication {
 		// END //
 
 
+	}
+
+	@GetMapping("/tmpsckt2")
+	public String hexIngress(@RequestParam(value = "hexMsg", defaultValue = "FFFFFF") String hexMsg) {
+		// Takes a Hex input and runs the same shenanigans as the binary
+
+		// Error Handling
+
+		if (hexMsg == "") {
+			// move to an "Actually empty" function later
+			return "Your message device sent nothing.";
+		}
+
+		try {
+			int temporaryInt = Integer.parseInt(hexMsg, 16);
+		}
+		catch (Exception e) {
+			// Do nothing
+			return "You cannot input non-hex messages.";
+		}
+
+		// Okay. No errors.
+
+		// now, just like, print it bro
+
+		String binaryMsg = this.parseHexBinary(hexMsg);
+
+		String mama = this.ingresString(binaryMsg);
+
+		return mama;
 	}
 
 }
