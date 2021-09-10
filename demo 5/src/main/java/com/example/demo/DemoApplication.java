@@ -12,12 +12,16 @@ import javax.websocket.Decoder.Binary;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.format.number.money.CurrencyUnitFormatter;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.json.JSONObject;
 import org.json.JSONString;
+
+import java.sql.*;
 
 enum MessageType {
 	init, temperature, humidity, pressure
@@ -45,6 +49,49 @@ public class DemoApplication {
 		return binaryString;
 	}
 
+	private String mysqlConnect() {
+		// This is COMPLETELY hardcoded atm.
+		// What i want later is a modular function that
+		// handles different connection types with enums
+
+		String publicIP = "34.129.245.46";
+		String privateIP = "172.27.0.5";
+		String user = "root";
+		String password = "KosSikim12$";
+		String dbname = "bluetooth_rpi_database";
+
+		
+		// At the moment, only public IP connections are granted. Weirdly i cannot connect via internal networks, INTERNALLY/
+		// please get the GKE clusters connected to internal netwrok.
+
+		try {  
+			Class.forName("com.mysql.cj.jdbc.Driver");  
+			Connection con=DriverManager.getConnection(  
+			"jdbc:mysql://" + publicIP + ":3306/" + dbname ,"root","KosSikim12$");  
+			//here sonoo is database name, root is username and password  
+			Statement stmt=con.createStatement();  
+			ResultSet rs=stmt.executeQuery("select * from entries;");  
+
+			String allResults = "";
+			while(rs.next()) { 
+				String currentResult = rs.getInt(1)+"  "+rs.getString(2)+"  "+rs.getString(3);
+				allResults += currentResult;
+				System.out.println(currentResult);
+
+			}
+
+			rs.close();
+			con.close();
+
+			return allResults;
+			}
+			catch(Exception e) {
+				System.out.println(e);
+				return e.getMessage();
+			}
+
+	}
+
 	// Public methods
 	public static void main(String[] args) {
 		SpringApplication.run(DemoApplication.class, args);
@@ -66,6 +113,68 @@ public class DemoApplication {
 	@GetMapping("/haha")
 	public String haha() {
 		return "haha";
+	}
+
+	@GetMapping("/trysql")
+	public String trysql() {
+		return this.mysqlConnect();
+	}
+
+	@GetMapping("/insertsql")
+	public String insertSQL(@RequestParam(value = "id", defaultValue = "") String deviceId, @RequestParam(value = "type", defaultValue = "") String messageType, @RequestParam(value = "val", defaultValue = "") String value ) {
+		/// Takes three inputs and makes heeby jeebies
+
+		// Error handling
+		if (deviceId == "" || messageType == "" || value == "") {
+			return "Wrong inputs";
+		}
+		else if(!(messageType.equalsIgnoreCase("temperature") || messageType.equalsIgnoreCase("pressure") || messageType.equalsIgnoreCase("humidity"))) {
+			return "Cannot have that message type. Only acceptables are: Humidity, Temperature, and Pressure";
+		}
+		else {
+			try {
+				int temporaryValueInt = Integer.parseInt(value);
+				int temporaryIdInt = Integer.parseInt(deviceId);
+			}
+			catch (Exception e) {
+				return e.getLocalizedMessage();
+			}
+
+			// OK. We are good now.
+			// Also, this integer casting protects against SQL injection.
+
+			// Initiate the SQL sending
+
+			// PLEASE for the love of god fix this copy paste cpode nonsenese
+
+			String publicIP = "34.129.245.46";
+			String privateIP = "172.27.0.5";
+			String user = "root";
+			String password = "KosSikim12$";
+			String dbname = "bluetooth_rpi_database";
+	
+			
+			// At the moment, only public IP connections are granted. Weirdly i cannot connect via internal networks, INTERNALLY/
+			// please get the GKE clusters connected to internal netwrok.
+	
+			try {  
+				Class.forName("com.mysql.cj.jdbc.Driver");  
+				Connection con=DriverManager.getConnection(  
+				"jdbc:mysql://" + publicIP + ":3306/" + dbname ,user ,password);  
+				//here sonoo is database name, root is username and password  
+				Statement stmt=con.createStatement();  
+				Boolean rs = stmt.execute("insert into entries (deviceID, messageType, messageValue) values ('" + deviceId + "','" + messageType + "','" + value + "');");
+				con.close();
+	
+				return String.valueOf(rs);
+				}
+				catch(Exception e) {
+					System.out.println(e);
+					return e.getMessage();
+				}
+
+		}
+
 	}
 
 	@GetMapping("/coinspot")
