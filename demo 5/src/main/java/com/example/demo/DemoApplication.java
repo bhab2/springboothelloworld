@@ -49,7 +49,7 @@ public class DemoApplication {
 		return binaryString;
 	}
 
-	private String mysqlConnect() {
+	private String mysqlConnect(String password) {
 		// This is COMPLETELY hardcoded atm.
 		// What i want later is a modular function that
 		// handles different connection types with enums
@@ -57,7 +57,7 @@ public class DemoApplication {
 		String publicIP = "34.129.245.46";
 		String privateIP = "172.27.0.5";
 		String user = "root";
-		String password = "KosSikim12$";
+		
 		String dbname = "bluetooth_rpi_database";
 
 		
@@ -67,7 +67,7 @@ public class DemoApplication {
 		try {  
 			Class.forName("com.mysql.cj.jdbc.Driver");  
 			Connection con=DriverManager.getConnection(  
-			"jdbc:mysql://" + publicIP + ":3306/" + dbname ,"root","KosSikim12$");  
+			"jdbc:mysql://" + publicIP + ":3306/" + dbname ,"user", password);  
 			//here sonoo is database name, root is username and password  
 			Statement stmt=con.createStatement();  
 			ResultSet rs=stmt.executeQuery("select * from entries;");  
@@ -116,16 +116,16 @@ public class DemoApplication {
 	}
 
 	@GetMapping("/trysql")
-	public String trysql() {
-		return this.mysqlConnect();
+	public String trysql(@RequestParam(value = "pswd", defaultValue = "") String password) {
+		return this.mysqlConnect(password);
 	}
 
 	@GetMapping("/insertsql")
-	public String insertSQL(@RequestParam(value = "id", defaultValue = "") String deviceId, @RequestParam(value = "type", defaultValue = "") String messageType, @RequestParam(value = "val", defaultValue = "") String value ) {
+	public String insertSQL(@RequestParam(value = "id", defaultValue = "") String deviceId, @RequestParam(value = "type", defaultValue = "") String messageType, @RequestParam(value = "val", defaultValue = "") String value, @RequestParam(value = "pswd", defaultValue = "") String password ) {
 		/// Takes three inputs and makes heeby jeebies
 
 		// Error handling
-		if (deviceId == "" || messageType == "" || value == "") {
+		if (deviceId == "" || messageType == "" || value == "" || password == "") {
 			return "Wrong inputs";
 		}
 		else if(!(messageType.equalsIgnoreCase("temperature") || messageType.equalsIgnoreCase("pressure") || messageType.equalsIgnoreCase("humidity"))) {
@@ -150,7 +150,6 @@ public class DemoApplication {
 			String publicIP = "34.129.245.46";
 			String privateIP = "172.27.0.5";
 			String user = "root";
-			String password = "KosSikim12$";
 			String dbname = "bluetooth_rpi_database";
 	
 			
