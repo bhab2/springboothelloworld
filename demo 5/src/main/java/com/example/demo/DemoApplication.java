@@ -6,6 +6,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Date;
 import java.util.Scanner;
+import com.example.demo.Coins;
+
+import com.example.demo.Coin;
+
+import java.util.Set;
 
 import javax.management.RuntimeErrorException;
 import javax.websocket.Decoder.Binary;
@@ -18,8 +23,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.json.JSONObject;
-import org.json.JSONString;
+import org.json.*;
+
+import java.util.ArrayList;
 
 import java.sql.*;
 
@@ -67,7 +73,7 @@ public class DemoApplication {
 		try {  
 			Class.forName("com.mysql.cj.jdbc.Driver");  
 			Connection con=DriverManager.getConnection(  
-			"jdbc:mysql://" + publicIP + ":3306/" + dbname ,"user", password);  
+			"jdbc:mysql://" + publicIP + ":3306/" + dbname ,user, password);  
 			//here sonoo is database name, root is username and password  
 			Statement stmt=con.createStatement();  
 			ResultSet rs=stmt.executeQuery("select * from entries;");  
@@ -75,7 +81,7 @@ public class DemoApplication {
 			String allResults = "";
 			while(rs.next()) { 
 				String currentResult = rs.getInt(1)+"  "+rs.getString(2)+"  "+rs.getString(3);
-				allResults += currentResult;
+				allResults += currentResult + "\n";
 				System.out.println(currentResult);
 
 			}
@@ -315,6 +321,90 @@ public class DemoApplication {
 		String mama = this.ingresString(binaryMsg);
 
 		return mama;
+	}
+
+	// Playing around with passing Objects, and seeing them go JSON
+
+	@GetMapping("/testjson")
+	public Coins testJson() {
+		// Pass some fucking dumbass value and see if springboot automatically makes this shit into a json
+
+		// OK let's go with Coinspot.
+		Coin ergerg = new Coin("Example", "Example", 20);
+		Coin[] hahaaaaaaaa = {ergerg};
+		Coins fuckit = new Coins(-1, hahaaaaaaaa);
+
+		try {
+			URL url = new URL("https://www.coinspot.com.au/pubapi/v2/latest");
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+			conn.setRequestMethod("GET");
+
+			conn.connect();
+
+			// Get response code
+			int response = conn.getResponseCode();
+
+			// Handle request codes
+			if (response != 200) {
+				// Not OK
+				System.out.println("What the hell is going on here;");
+				//return "Failed";
+
+				return fuckit;
+			
+			}
+			else {
+				ArrayList<Coin> tempCoins = new ArrayList<Coin>();
+				Scanner scanner = new Scanner(url.openStream());
+
+				// Write JSON to inline ingest
+				while (scanner.hasNext()) {
+
+					// This is where i create Coin objects in-line and pass it to my buddy.
+
+					String nextLine = scanner.nextLine();
+					
+					// Usually, the entire thing is inside of one single nextyline.
+
+					JSONObject yourmum = new JSONObject(nextLine);
+					//System.out.println("Your JSON Object came out to be: \n" + yourmum);
+
+					// Now separate them
+					JSONObject prices = yourmum.getJSONObject("prices");
+					
+					Set<String> keys = prices.keySet();
+					//System.out.println("Your JSON keys came out to be: \n" + keys);
+
+					for (String key : keys) {
+						// iterate my boy
+						float lastValueCurrent = Float.parseFloat(prices.getJSONObject(key).getString("last"));
+						System.out.println("Your Last value for " + key + " is: " + lastValueCurrent + "\n");
+
+						Coin currentCoin = new Coin(key, key, lastValueCurrent);
+						tempCoins.add(currentCoin);
+
+					}
+
+					// inline += scanner.nextLine();
+				}
+
+				scanner.close();
+				Coin[] arrayed = new Coin[tempCoins.size()];
+				tempCoins.toArray(arrayed);
+				Coins fuckyou = new Coins(0, arrayed);
+				return fuckyou;
+
+				// Parse
+				//return inline;
+		
+		}
+		
+		} catch (Exception e) {
+			e.printStackTrace();
+			return fuckit;
+		}
+
 	}
 
 }
